@@ -20,14 +20,16 @@ const joinPath = (...paths) => paths.map(it=> it.replace(/^\/|\/$/g, '')).join('
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {base_url: '',
+    this.state = {
+      base_url: '',
       consumer_key: '',
       username: '',
       password: '',
       token: '',
-      banks: [],
+      customers: [],
       accounts: [],
-      error: null
+      error: null,
+      bank_id: ''
     }
   }
 
@@ -63,6 +65,7 @@ class App extends React.Component {
   fetch_direct_login_token = ()=>{
     const {base_url, consumer_key, username, password} = this.state
     const url =  joinPath(base_url, '/my/logins/direct')
+
     axios({
       url,
       method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -79,9 +82,9 @@ class App extends React.Component {
 
   clear_token = ()=> this.setState({'token': ''})
 
-  fetch_banks = ()=> {
+  fetch_customers = ()=> {
     const {base_url, token} = this.state
-    const url = joinPath(base_url, '/obp/v4.0.0/banks')
+    const url = joinPath(base_url, '/obp/v4.0.0/users/current/customers')
     axios({
       url,
       method: 'GET', // *GET, POST, PUT, DELETE, etc.
@@ -92,15 +95,15 @@ class App extends React.Component {
         'Authorization': `DirectLogin token="${token}"`
       }
     }).then(result => {
-      this.setState({'banks': result.banks, 'error': null});
+      console.log(result);
+      this.setState({'customers': result.customers, 'error': null});
     }).catch(this.error_handler)
   }
 
   fetch_accounts = () => {
-    const {base_url, token} = this.state
-    const url = joinPath(base_url, `/obp/v4.0.0/my/accounts`)
+    const {base_url, token, bank_id} = this.state
     axios({
-      url,
+      url: joinPath(base_url, `/obp/v4.0.0/my/accounts`),
       method: 'GET', // *GET, POST, PUT, DELETE, etc.
       mode: 'cors', // no-cors, *cors, same-origin
       cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -109,7 +112,10 @@ class App extends React.Component {
         'Authorization': `DirectLogin token="${token}"`
       }
     }).then(result => {
-      this.setState({'accounts': result.accounts, 'error': null});
+      this.setState({
+        'accounts': result.accounts, 
+        'error': null
+      });
     }).catch(this.error_handler)
   }
 
@@ -119,7 +125,7 @@ class App extends React.Component {
           <div className="page-header text-center">
             <h1>LeapOS API SDK ReactJs</h1>
             <p>
-              This is a demo of direct login, fetch banks and fetch accounts
+              This is a demo of direct login, fetch accounts, customers
             </p>
           </div> <hr/>
           {
@@ -139,27 +145,32 @@ class App extends React.Component {
                         }
                       </code>
                   </p>
-                  <div>
+                  <div className="mb-4">
                     <ButtonToolbar>
-                      <Button variant="primary" onClick={this.fetch_banks}>Get Banks</Button> &nbsp;
-                      <Button variant="primary" onClick={this.clear_token}>Reset Token</Button>
+                       <Button variant="primary" onClick={this.clear_token}>Reset Token</Button>
                     </ButtonToolbar>
-                    banks:
-                    <ul className="list-group">
-                      { this.state.banks.length ?
-                        this.state.banks.map(bank => (<li className="list-group-item" key={bank.id}>{bank.short_name}</li>)) :
-                        <li className="list-group-item">no banks</li>
-                      }
-                    </ul>
-                  </div>
-                  <div>
+                  </div>  
+                  <div className="mb-2">
                     <Button variant="primary" onClick={this.fetch_accounts}>Get Accounts</Button> <br/>
-                    accounts:
+                    Accounts:
                     <ul className="list-group">
                       {
                         this.state.accounts.length ?
-                        this.state.accounts.map(account => (<li className="list-group-item" key={account.id}>{account.label}</li>)) :
+                        this.state.accounts.map(account => (<li className="list-group-item" key={account.id}>{account.label} - account id: {account.id}</li>)) :
                         <li className="list-group-item">no accounts</li>
+                      }
+                    </ul>
+                  </div>
+                  <div className="mb-2">
+                    <ButtonToolbar>
+                      <Button variant="primary" onClick={this.fetch_customers}>Get Customers</Button> &nbsp;
+                    </ButtonToolbar>
+                    Customers:
+                    <ul className="list-group">
+                      {
+                        this.state.customers.length ?
+                        this.state.customers.map(customer => (<li className="list-group-item" key={customer.customer_id}>{customer.legal_name} - customer id: {customer.customer_id}</li>)) :
+                        <li className="list-group-item">no customers</li>
                       }
                     </ul>
                   </div>
